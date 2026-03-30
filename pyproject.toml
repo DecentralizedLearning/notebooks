@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dnotebooks"
+version = "1.0"
+description = "dNotebooks - Notebooks Utilities"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "jupyterlab",
+    "gdown",
+    "markdown",
+    "ipywidgets",
+    "ipyfilechooser",
+    "seaborn",
+    "ipympl",
+    "ipython",
+    "umap-learn",
+    "dengine @ git+https://github.com/DecentralizedLearning/dEngine.git"
+]
+
+[tool.setuptools.packages.find]
+include = ["dnotebooks*"]
