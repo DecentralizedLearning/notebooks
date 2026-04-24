@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import List, Optional, Sequence, Callable, Dict, Literal
+from typing import List, Optional, Sequence, Callable, Dict, Literal, Tuple
 from collections import defaultdict
 from pathlib import Path
 from enum import Enum
@@ -82,6 +82,64 @@ def confusion_matrix_heatmap(
     heatmap.set(xlabel='Predicted', ylabel='Ground Truth')
     return heatmap
 
+
+# def _confusion_matrix_heatmap(
+#     confusion_matrix: np.ndarray,
+#     ax: Axes,
+#     row_indices: list[int] | None = None,
+#     col_indices: list[int] | None = None,
+# ):
+#     classes, _ = confusion_matrix.shape
+
+#     row_indices = row_indices if row_indices is not None else list(range(classes))
+#     col_indices = col_indices if col_indices is not None else list(range(classes))
+
+#     subset = confusion_matrix[np.ix_(row_indices, col_indices)]
+
+#     df_cm = pd.DataFrame(
+#         subset,
+#         index=row_indices,
+#         columns=col_indices,
+#     )
+#     heatmap_default_args = {
+#         'cbar': False,
+#         'annot': True,
+#         'fmt': _CONFUSION_MATRIX_HEATMAP_PRECISION,
+#         'ax': ax
+#     }
+#     rdgn = sn.diverging_palette(30, 260, s=100, center='dark', as_cmap=True)
+#     heatmap = sn.heatmap(
+#         df_cm,
+#         # cmap=rdgn,
+#         vmin=0, vmax=1,
+#         **heatmap_default_args
+#     )
+
+#     heatmap.set_xticks(np.arange(len(col_indices)) + 0.5)
+#     heatmap.set_yticks(np.arange(len(row_indices)) + 0.5)
+
+#     heatmap.set_xticklabels([str(i) for i in col_indices], rotation=0)
+#     heatmap.set_yticklabels([str(i) for i in row_indices], rotation=0)
+
+#     heatmap.set(xlabel='Predicted', ylabel='Ground Truth')
+#     return heatmap
+
+
+# def confusion_matrix_heatmap(
+#     confusion_matrix: np.ndarray,
+#     ax: Axes,
+#     row_range: Tuple[int, int] | None = (94, 95),
+#     col_range: Tuple[int, int] | None = (0, 9),
+
+#     # row_range: Tuple[int, int] | None = (20, 21),
+#     # col_range: Tuple[int, int] | None = (69, 78),
+# ):
+#     row_indices = list(range(row_range[0], row_range[1])) if row_range else None
+#     col_indices = list(range(col_range[0], col_range[1])) if col_range else None
+#     return _confusion_matrix_heatmap(
+#         confusion_matrix, ax,
+#         row_indices, col_indices
+#     )
 
 def partitions_histogram(
     partitions: ExperimentPartitions,
