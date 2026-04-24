@@ -724,6 +724,8 @@ class MultiExperimentMetricComparisonPlot(MetricPlot):
         max_time = max(max_time) if len(max_time) > 0 else None
 
         for label, seeds_confusion_matrices in self.confusion_matrices.items():
+            linestyle = self._linestyles[label]
+            c = self._custom_colors.get(label)
             Y = stack_mean_node_metric(
                 seeds_confusion_matrices,
                 self.epoch[0], self.epoch[1],
@@ -746,19 +748,25 @@ class MultiExperimentMetricComparisonPlot(MetricPlot):
                 Y_upper_bound = moving_average(Y_upper_bound, self.smoothing)
                 Y_lower_bound = moving_average(Y_lower_bound, self.smoothing)
 
+            if (
+                (seeds_confusion_matrices[0].num_nodes == 1)  # One node only, centralized scenario baseline
+                and any([s[0].num_nodes > 1 for s in self.confusion_matrices.values()])  # Multiple experiments available
+            ):
+                max_epoch = max([s[0].epochs for s in self.confusion_matrices.values()])
+                Y[:] = Y.max(axis=0)
+                Y = np.pad(Y, (0, max_epoch - len(Y)), mode='edge')
+                Y_lower_bound = Y
+                Y_upper_bound = Y
+
             X = reduce_time_components(
                 seeds_confusion_matrices,
                 self.epoch[0], self.epoch[1]
             )[:len(Y)]
-
-            linestyle = self._linestyles[label]
-            c = self._custom_colors.get(label)
-            self._ax.fill_between(X, Y_lower_bound, Y_upper_bound, color=c, alpha=.1)
-
-            if self.ylimit:
-                self._ax.set_ylim(ymin=self.ylimit[0], ymax=self.ylimit[1])
+            self._ax.fill_between(X, Y_lower_bound, Y_upper_bound, color=c, alpha=.3)
             self._ax.plot(X, Y, color=c, label=label, alpha=1, linestyle=linestyle)
 
+        if self.ylimit:
+            self._ax.set_ylim(ymin=self.ylimit[0], ymax=self.ylimit[1])
         if self._xlabel:
             self._ax.set_xlabel(self._xlabel)
         self._ax.set_ylabel(self.metric.name)
