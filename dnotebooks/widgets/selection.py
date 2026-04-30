@@ -5,14 +5,17 @@ from collections import defaultdict, OrderedDict
 from glob import glob
 from pathlib import Path
 from typing import Dict, Tuple, Optional, List, Callable
+from dataclasses import dataclass
 import logging
 import os
 
+import numpy as np
 from ipywidgets import Layout, HBox, VBox, Dropdown, Checkbox, Label
 from ipyfilechooser import FileChooser
 
 from dengine.analysis import (
     find_confusion_matrices,
+    ExperimentMetric,
     ExperimentConfusionMatrix,
     ExperimentConfusionMatrixDelta
 )
@@ -21,11 +24,64 @@ from dnotebooks.utils import RegexColorDict
 from .miscellaneous import LabelPP, MultiCheckboxWidget, MultiCheckboxWithLimitWidget
 
 
+@dataclass
+class ExperimentGroupMetrics:
+    metric_name: str
+    group_name: str
+    metrics: List[ExperimentMetric]
+
+    def aggregate_mean(self) -> ExperimentMetric:
+        m0 = self.metrics[0]
+        if len(self.metrics) == 1:
+            return ExperimentConfusionMatrix(
+                devices_confusion_matrices=m0.data,
+                description=m0.description
+            )
+        stacked_means = np.stack([m.mean() for m in self.metrics])
+        return ExperimentConfusionMatrix(
+            devices_confusion_matrices=stacked_means,
+            description=m0.description,
+        )
+
+
+@dataclass
+class ExperimentGroup:
+    name: str
+    paths: List[Path]
+
+    def __getitem__(self, index: int) -> Path:
+        return self.paths[index]
+
+    def load_group_metric_files(self) -> Dict[str, ExperimentGroupMetrics]:
+        metrics: Dict[str, ExperimentGroupMetrics] = {}
+        for run_output_path in self.paths:
+            for metric_name, nodes_metric_files in find_confusion_matrices(run_output_path).items():
+                if metric_name not in metrics:
+                    metrics[metric_name] = ExperimentGroupMetrics(metric_name, self.name, [])
+                metrics[metric_name].metrics.append(
+                    ExperimentMetric(nodes_metric_files)
+                )
+        return metrics
+
+
+def _load_experiment_group(root: Path) -> Dict[str, ExperimentGroup]:
+    root_str = str(root)
+    experiments_cfgs = glob(root_str + '/**/config.yaml', recursive=True)
+
+    experiment_map: Dict[str, ExperimentGroup] = {}
+    for cfg in experiments_cfgs:
+        exp_name = Path(cfg).parent.name
+        if exp_name not in experiment_map:
+            experiment_map[exp_name] = ExperimentGroup(name=exp_name, paths=[])
+        experiment_map[exp_name].paths.append(Path(cfg).parent)
+    return experiment_map
+
+
 def StyledExperimentSelectionWidget(
         root: Path = Path("."),
         limit: Optional[int] = None,
         style_options: Optional[List[str]] = None,
-) -> Tuple[VBox, Callable[[], List[Tuple[Path, str]]]]:
+) -> Tuple[VBox, Callable[[], List[Tuple[ExperimentGroup, str]]]]:
     """
     Multi-experiment selection widget with style dropdown per experiment.
 
@@ -42,12 +98,12 @@ def StyledExperimentSelectionWidget(
         style_options = ['solid', 'dashed', 'dotted']
 
     # Track experiments and their widgets
-    experiment_rows: Dict[str, Tuple[Path, HBox, Checkbox, Dropdown]] = {}
+    experiment_rows: Dict[str, Tuple[ExperimentGroup, HBox, Checkbox, Dropdown]] = {}
     selection_order: OrderedDict[str, int] = OrderedDict()  # name -> selection_timestamp
     selection_counter = [0]  # Mutable counter for tracking selection order
     experiments_container = VBox([])
 
-    def _create_experiment_row(name: str, path: Path) -> Tuple[HBox, Checkbox, Dropdown]:
+    def _create_experiment_row(name: str, experiment_group: ExperimentGroup) -> Tuple[HBox, Checkbox, Dropdown]:
         """Create a row with checkbox and style dropdown for an experiment."""
         checkbox = Checkbox(
             value=False,
@@ -55,7 +111,7 @@ def StyledExperimentSelectionWidget(
             indent=False,
             layout=Layout(width='600px')
         )
-
+        count_label = Label(f"({len(experiment_group.paths)} files)", layout=Layout(width='100px'))
         style_dropdown = Dropdown(
             options=style_options,
             value=style_options[0],
@@ -82,6 +138,7 @@ def StyledExperimentSelectionWidget(
 
         row = HBox([
             checkbox,
+            count_label,
             Label('Style:', layout=Layout(width='50px')),
             style_dropdown
         ], layout=Layout(align_items='center', gap='10px'))
@@ -95,10 +152,7 @@ def StyledExperimentSelectionWidget(
         if not value:
             return
 
-        experiments_cfgs = glob(value + '/**/config.yaml', recursive=True)
-        experiments_map = {
-            Path(cfg).parent.name: Path(cfg).parent for cfg in experiments_cfgs
-        }
+        experiments_map = _load_experiment_group(Path(value))
 
         # Clear previous experiments
         experiment_rows = {}
@@ -107,9 +161,9 @@ def StyledExperimentSelectionWidget(
 
         # Create rows for each experiment
         rows = []
-        for name, path in sorted(experiments_map.items()):
-            row, checkbox, dropdown = _create_experiment_row(name, path)
-            experiment_rows[name] = (path, row, checkbox, dropdown)
+        for name, group in sorted(experiments_map.items()):
+            row, checkbox, dropdown = _create_experiment_row(name, group)
+            experiment_rows[name] = (group, row, checkbox, dropdown)
             rows.append(row)
 
         experiments_container.children = rows
@@ -121,7 +175,7 @@ def StyledExperimentSelectionWidget(
         file_chooser_wg
     ], layout=layout)
 
-    def get_selection_paths() -> List[Tuple[Path, str]]:
+    def get_selection_paths() -> List[Tuple[ExperimentGroup, str]]:
         """
         Get selected paths with their styles, ordered by selection time.
 
@@ -129,12 +183,12 @@ def StyledExperimentSelectionWidget(
             List of (Path, style) tuples in selection order
         """
         # Collect selected experiments with their order
-        selected = []
+        selected: List[Tuple[float, ExperimentGroup, str]] = []
         for name in experiment_rows:
-            path, row, checkbox, dropdown = experiment_rows[name]
+            group, row, checkbox, dropdown = experiment_rows[name]
             if checkbox.value:
                 order = selection_order.get(name, float('inf'))
-                selected.append((order, path, dropdown.value))
+                selected.append((order, group, dropdown.value))  # type: ignore
 
         # Sort by selection order and return
         selected.sort(key=lambda x: x[0])
@@ -273,25 +327,25 @@ def ConfusionMatrixPartitionDeltaSelection(experiments: List[Path]):
 
 
 def ConfusionMatrixPartitionMultiSelection(
-    experiments: List[Path],
+    experiments_groups: List[ExperimentGroup],
     description: str = "Select confusion matrix:"
 ):
-    def get_selection():
+    def get_selection() -> Optional[Dict[str, ExperimentConfusionMatrix]]:
         if confusion_matrix_selection.value is None:
             return
         matrices = {}
-        for (exp, x) in zip(experiments, confusion_matrix_selection.value):
+        selection: List[ExperimentGroupMetrics] = confusion_matrix_selection.value
+        for group_metrics in selection:
             try:
-                matrices[exp] = ExperimentConfusionMatrix(x)
+                matrices[group_metrics.group_name] = group_metrics.aggregate_mean()
             except Exception as e:
-                logging.error(f"Unable to load: {exp}: \n{e}")
+                logging.error(f"Unable to load: {group_metrics}: \n{e}")
         return matrices
 
-    dropdown_options = defaultdict(list)
-    for exp in experiments:
-        exp_cf_files = find_confusion_matrices(exp)
-        for key, key_files in exp_cf_files.items():
-            dropdown_options[key].append(key_files)
+    dropdown_options: Dict[str, List[ExperimentGroupMetrics]] = defaultdict(list)
+    for group in experiments_groups:
+        for metric_name, group_metrics in group.load_group_metric_files().items():
+            dropdown_options[metric_name].append(group_metrics)
 
     layout = Layout(justify_content='flex-start', gap='5em')
     confusion_matrix_selection = Dropdown(
