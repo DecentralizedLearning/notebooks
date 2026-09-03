@@ -140,6 +140,7 @@ class UmapInteractivePlot:
         D: SupervisedDataset,
         activations,
         labels: dict[int, str] | None = None,
+        labels_color: dict[int, str] | None = None,
         title: str = "",
         highlight_labels: set[int] | None = None,
         output_directory: Path = Path('res/'),
@@ -160,15 +161,24 @@ class UmapInteractivePlot:
         self._exception_output = Output()
 
         self._label_names = labels or {}
+        self._label_colors = labels_color or {}
         self._data = _get_data(D)
         self._labels = _get_labels(D)
         self._unique_labels = np.unique(self._labels)
         self._fig.canvas.mpl_connect('button_press_event', self._onclick_print_execpt)
 
-    def _label_text(self, label):
+    def _label_text(self, label) -> str:
         if label in self._label_names:
-            return f"{self._label_names[label]} ({label})"
+            return f"{label} ({self._label_names[label]})"
         return f"{label}"
+
+    def _label_color(self, label) -> Optional[str]:
+        is_highlighted = not self._highlight_labels or label in self._highlight_labels
+        if not is_highlighted:
+            return "gray"
+        if label in self._label_colors:
+            return self._label_colors[label]
+        return None
 
     def draw(self, highlight_idx=None, img=None):
         self._ax.cla()
@@ -183,11 +193,11 @@ class UmapInteractivePlot:
                 label=self._label_text(label),
                 alpha=0.3 if is_highlighted else 0.08,
                 edgecolors="red" if (label < 0) else "none",
-                color="gray" if not is_highlighted else None,
+                color=self._label_color(label),
                 s=32
             )
 
-        if highlight_idx is not None:
+        if highlight_idx is not None:  # Handles onclick over a sample
             self._ax.scatter(
                 self._embedding[highlight_idx, 0],
                 self._embedding[highlight_idx, 1],
@@ -265,7 +275,7 @@ class UmapInteractivePlot:
             filename = f"{self._title}.png"
 
         self._ax.set_title(self._title)
-        self._fig.savefig(filename, bbox_inches="tight", pad_inches=0, transparent=True, dpi=300)
+        self._fig.savefig(self._output_dir / filename, bbox_inches="tight", pad_inches=0, transparent=True, dpi=300)
 
 
 class UmapWidget:
@@ -274,6 +284,7 @@ class UmapWidget:
         D: SupervisedDataset,
         activations,
         labels: dict[int, str] | None = None,
+        labels_colors: dict[int, str] | None = None,
         title: str = "",
         highlight_labels: set[int] | None = None,
     ):
@@ -284,7 +295,8 @@ class UmapWidget:
             labels=labels,
             title=title,
             highlight_labels=highlight_labels,
-            output_directory=self._output_dir
+            output_directory=self._output_dir,
+            labels_color=labels_colors
         )
         self._dump_button = Button(description='Save all figures')
         self._dump_button.on_click(self.dump)
