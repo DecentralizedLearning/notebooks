@@ -31,7 +31,6 @@ from .miscellaneous import LabelPP, set_epoch_slider_widget
 class ExperimentDashboard:
     def __init__(
         self,
-        experiment_root_path: Path,
         confusion_matrices: Optional[ExperimentConfusionMatrix],
         partitions: ExperimentPartitions,
         graph: Graph,
