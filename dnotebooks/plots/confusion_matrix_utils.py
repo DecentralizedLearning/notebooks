@@ -6,6 +6,7 @@ from networkx import Graph
 from networkx.algorithms import descendants_at_distance
 
 from dengine.analysis import ExperimentConfusionMatrix
+from dnotebooks.widgets import ExperimentGroup
 
 
 def reduce_n_hop_normalized_confusion_matrices(
@@ -26,7 +27,15 @@ def reduce_n_hop_normalized_confusion_matrices(
         try:
             cfs = [confusion_matrices.device_view(X).confusion_matrix(normalize=True) for X in k_hop_neighbors]
         except Exception:
-            logging.warning(f"No confusion found for {device}")
+            logging.warning(
+                f"No metric found at index {device}. "
+                f"This warning may be caused by aggregated experiment seeds. When loading multiple experiments via "
+                f"{ExperimentGroup.__name__}, node metrics for each experiment are initially aggregated by mean. "
+                "Different seeds are then stored internally as separate nodes in a fictitious graph. "
+                "If multiple experiment seeds are loaded, this warning can safely be ignored. "
+                "Future versions will handle this use case automatically."
+            )
+            continue
         mean_cfs = reduction_fun(np.stack(cfs))
         devices_n_hops_neighbors_mean_cf.append(mean_cfs)
     return ExperimentConfusionMatrix(
