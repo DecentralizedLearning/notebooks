@@ -37,7 +37,11 @@ class ExperimentGroupMetrics:
                 devices_confusion_matrices=m0.data,
                 description=m0.description
             )
-        stacked_means = np.stack([m.mean() for m in self.metrics])
+
+        metrics_mean = [m.mean() for m in self.metrics]
+        metrix_epoch = min([x.shape[0] for x in metrics_mean])
+        metrics_truncated_mean = [x[:metrix_epoch] for x in metrics_mean]
+        stacked_means = np.stack(metrics_truncated_mean)
         return ExperimentConfusionMatrix(
             devices_confusion_matrices=stacked_means,
             description=m0.description,
