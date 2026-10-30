@@ -193,8 +193,8 @@ def plot_metric_over_time(
         mean_linestyle = '-'
         accuracies_view = zip(
             X,
-            [None] * rounds,
-            [color] * rounds
+            [None] * len(X),
+            [color] * len(X)
         )
 
     for idx, (acc, label, c) in enumerate(accuracies_view):
