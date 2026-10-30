@@ -20,7 +20,6 @@ from dengine.analysis import (
     ExperimentConfusionMatrixDelta
 )
 from dnotebooks.utils import RegexColorDict
-
 from .miscellaneous import LabelPP, MultiCheckboxWidget, MultiCheckboxWithLimitWidget
 
 
@@ -99,7 +98,7 @@ def StyledExperimentSelectionWidget(
         - getter_function returns List[Tuple[Path, style]] ordered by selection time
     """
     if style_options is None:
-        style_options = ['solid', 'dashed', 'dotted']
+        style_options = ['solid', 'dashed', 'dotted', '*', 'o', 's', 'D']
 
     # Track experiments and their widgets
     experiment_rows: Dict[str, Tuple[ExperimentGroup, HBox, Checkbox, Dropdown]] = {}
