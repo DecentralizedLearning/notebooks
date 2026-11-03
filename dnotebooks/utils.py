@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from typing import Optional, Dict
 import re
 from pathlib import Path
 import yaml
 import hashlib
+from dataclasses import dataclass
 
 
 def _string_to_color(s: str) -> str:
@@ -46,3 +49,34 @@ class RegexColorDict:
         if self.default:
             return self.default
         return _string_to_color(key)
+
+
+@dataclass
+class LineStyle:
+    DEFAULT = 'solid'
+    STYLE_OPTIONS = [
+        'solid',
+        'dashed',
+        'dotted',
+        '*',
+        'o',
+        's',
+        'D'
+    ]
+
+    linestyle: Optional[str] = None
+    marker: Optional[str] = None
+
+    def to_kwargs(self):
+        return {
+            "marker": self.marker,
+            "linestyle": self.linestyle,
+            "markevery": .2,
+            "markerfacecolor": 'white'
+        }
+
+    @staticmethod
+    def resolve(label: Optional[str]) -> LineStyle:
+        if label in ['*', 'o', 's', 'D']:
+            return LineStyle('solid', label)
+        return LineStyle(label, None)

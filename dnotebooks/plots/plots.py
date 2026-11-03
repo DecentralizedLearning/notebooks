@@ -24,7 +24,7 @@ from dengine.analysis import (
     ExperimentPartitions,
 )
 
-from dnotebooks.utils import RegexColorDict
+from dnotebooks.utils import RegexColorDict, LineStyle
 
 from .confusion_matrix_utils import (
     get_n_hop_normalized_confusion_matrices_mean,
@@ -724,7 +724,7 @@ class MultiExperimentMetricComparisonPlot(MetricPlot):
         max_time = max(max_time) if len(max_time) > 0 else None
 
         for label, seeds_confusion_matrices in self.confusion_matrices.items():
-            linestyle = self._linestyles[label]
+            linestyle = LineStyle.resolve(self._linestyles[label]).to_kwargs()
             c = self._custom_colors.get(label)
             Y = stack_mean_node_metric(
                 seeds_confusion_matrices,
@@ -763,7 +763,7 @@ class MultiExperimentMetricComparisonPlot(MetricPlot):
                 self.epoch[0], self.epoch[1]
             )[:len(Y)]
             self._ax.fill_between(X, Y_lower_bound, Y_upper_bound, color=c, alpha=.3)
-            self._ax.plot(X, Y, color=c, label=label, alpha=1, linestyle=linestyle)
+            self._ax.plot(X, Y, color=c, label=label, alpha=1, **linestyle)
 
         if self.ylimit:
             self._ax.set_ylim(ymin=self.ylimit[0], ymax=self.ylimit[1])
