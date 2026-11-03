@@ -19,7 +19,8 @@ from dengine.analysis import (
     ExperimentConfusionMatrix,
     ExperimentConfusionMatrixDelta
 )
-from dnotebooks.utils import RegexColorDict
+from dnotebooks.utils import RegexColorDict, LineStyle
+
 from .miscellaneous import LabelPP, MultiCheckboxWidget, MultiCheckboxWithLimitWidget
 
 
@@ -83,7 +84,6 @@ def _load_experiment_group(root: Path) -> Dict[str, ExperimentGroup]:
 def StyledExperimentSelectionWidget(
         root: Path = Path("."),
         limit: Optional[int] = None,
-        style_options: Optional[List[str]] = None,
 ) -> Tuple[VBox, Callable[[], List[Tuple[ExperimentGroup, str]]]]:
     """
     Multi-experiment selection widget with style dropdown per experiment.
@@ -97,9 +97,6 @@ def StyledExperimentSelectionWidget(
         Tuple of (widget, getter_function)
         - getter_function returns List[Tuple[Path, style]] ordered by selection time
     """
-    if style_options is None:
-        style_options = ['solid', 'dashed', 'dotted', '*', 'o', 's', 'D']
-
     # Track experiments and their widgets
     experiment_rows: Dict[str, Tuple[ExperimentGroup, HBox, Checkbox, Dropdown]] = {}
     selection_order: OrderedDict[str, int] = OrderedDict()  # name -> selection_timestamp
@@ -116,8 +113,8 @@ def StyledExperimentSelectionWidget(
         )
         count_label = Label(f"({len(experiment_group.paths)} files)", layout=Layout(width='100px'))
         style_dropdown = Dropdown(
-            options=style_options,
-            value=style_options[0],
+            options=LineStyle.STYLE_OPTIONS,
+            value=LineStyle.DEFAULT,
             layout=Layout(width='150px'),
             disabled=True  # Disabled until checkbox is selected
         )
