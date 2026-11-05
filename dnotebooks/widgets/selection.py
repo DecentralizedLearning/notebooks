@@ -35,7 +35,8 @@ class ExperimentGroupMetrics:
         if len(self.metrics) == 1:
             return ExperimentConfusionMatrix(
                 devices_confusion_matrices=m0.data,
-                description=m0.description
+                description=m0.description,
+                time_devices_confusion_matrices=m0.time_data
             )
 
         metrics_mean = [m.mean() for m in self.metrics]
@@ -330,7 +331,7 @@ def ConfusionMatrixPartitionMultiSelection(
     experiments_groups: List[ExperimentGroup],
     description: str = "Select confusion matrix:"
 ):
-    def get_selection() -> Optional[Dict[str, ExperimentConfusionMatrix]]:
+    def get_confusion_matrix() -> Optional[Dict[str, ExperimentConfusionMatrix]]:
         if confusion_matrix_selection.value is None:
             return
         matrices = {}
@@ -358,4 +359,4 @@ def ConfusionMatrixPartitionMultiSelection(
         confusion_matrix_selection
     ], layout=layout)
 
-    return widget, get_selection
+    return widget, get_confusion_matrix
