@@ -54,6 +54,8 @@ class RegexColorDict:
 @dataclass
 class LineStyle:
     DEFAULT = 'solid'
+    MARKERS = ['*', 'o', 's', 'D']
+    LINESTYLES = ['solid', 'dashed', 'dotted']
     STYLE_OPTIONS = [
         'solid',
         'dashed',
@@ -61,7 +63,15 @@ class LineStyle:
         '*',
         'o',
         's',
-        'D'
+        'D',
+        'dashed-o',
+        'dashed-s',
+        'dashed-D',
+        'dashed-*',
+        'dotted-o',
+        'dotted-s',
+        'dotted-D',
+        'dotted-*',
     ]
 
     linestyle: Optional[str] = None
@@ -77,6 +87,13 @@ class LineStyle:
 
     @staticmethod
     def resolve(label: Optional[str]) -> LineStyle:
-        if label in ['*', 'o', 's', 'D']:
+        if label is None:
+            return LineStyle(None, None)
+        if label in LineStyle.MARKERS:
             return LineStyle('solid', label)
+        if '-' in label:
+            linestyle, marker = label.split('-', 1)
+            if linestyle in LineStyle.LINESTYLES and marker in LineStyle.MARKERS:
+                return LineStyle(linestyle, marker)
+            raise ValueError(f"Unknown line style: {label!r}")
         return LineStyle(label, None)
