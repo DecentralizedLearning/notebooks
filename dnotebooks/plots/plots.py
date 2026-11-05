@@ -762,7 +762,7 @@ class MultiExperimentMetricComparisonPlot(MetricPlot):
                 seeds_confusion_matrices,
                 self.epoch[0], self.epoch[1]
             )[:len(Y)]
-            self._ax.fill_between(X, Y_lower_bound, Y_upper_bound, color=c, alpha=.3)
+            self._ax.fill_between(X, Y_lower_bound, Y_upper_bound, color=c, alpha=.1)
             self._ax.plot(X, Y, color=c, label=label, alpha=1, **linestyle)
 
         if self.ylimit:
