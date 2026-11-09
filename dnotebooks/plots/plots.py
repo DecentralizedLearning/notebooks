@@ -824,7 +824,9 @@ def stack_mean_node_metric(
 ) -> np.ndarray:
     exps_metric: List[np.ndarray] = []
     for cf in experiments:
-        if metric == "accuracy":
+        if len(cf.data.shape) == 2:
+            X = cf.data
+        elif metric == "accuracy":
             X = cf.accuracy()
         else:
             assert class_label is not None
