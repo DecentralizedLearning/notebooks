@@ -763,15 +763,20 @@ class MultiExperimentMetricComparisonPlot(MetricPlot):
                 self.epoch[0], self.epoch[1]
             )[:len(Y)]
             self._ax.fill_between(X, Y_lower_bound, Y_upper_bound, color=c, alpha=.1)
+            label = f"{label} · {round(max(Y), 3)}%"
             self._ax.plot(X, Y, color=c, label=label, alpha=1, **linestyle)
 
         if self.ylimit:
             self._ax.set_ylim(ymin=self.ylimit[0], ymax=self.ylimit[1])
         if self._xlabel:
             self._ax.set_xlabel(self._xlabel)
-        self._ax.set_ylabel(self.metric.name)
         if self._title:
             self._ax.set_title(self._title)
+
+        if self._ylabel:
+            self._ax.set_ylabel(self._ylabel)
+        else:
+            self._ax.set_ylabel(self.metric.name)
 
         if self._external_legend:
             self._ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))

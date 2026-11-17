@@ -81,7 +81,7 @@ class LineStyle:
         return {
             "marker": self.marker,
             "linestyle": self.linestyle,
-            "markevery": .2,
+            "markevery": .1,
             "markerfacecolor": 'white'
         }
 
