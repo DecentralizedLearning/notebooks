@@ -39,6 +39,9 @@ class ExperimentGroupMetrics:
                 time_devices_confusion_matrices=m0.time_data
             )
 
+        all_times_are_equal = all(np.all(m0.time_data == x.time_data) for x in self.metrics)
+        agg_time_data = m0.time_data if all_times_are_equal else None
+
         metrics_mean = [m.mean() for m in self.metrics]
         metrix_epoch = min([x.shape[0] for x in metrics_mean])
         metrics_truncated_mean = [x[:metrix_epoch] for x in metrics_mean]
@@ -46,6 +49,7 @@ class ExperimentGroupMetrics:
         return ExperimentConfusionMatrix(
             devices_confusion_matrices=stacked_means,
             description=m0.description,
+            time_devices_confusion_matrices=agg_time_data
         )
 
 
